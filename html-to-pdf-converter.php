@@ -5,7 +5,6 @@ Plugin URI: https://html2pdf.app/
 Description: A plugin that converts WordPress pages or posts to PDF using html2pdf.app API.
 Version: 1.0
 Author: html2pdf.app
-Author URI: https://html2pdf.app/
 */
 
 // Add the plugin settings page to the WordPress admin menu
