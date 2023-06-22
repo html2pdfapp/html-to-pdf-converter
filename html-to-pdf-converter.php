@@ -3,9 +3,11 @@
 Plugin Name: HTML to PDF Converter
 Plugin URI: https://html2pdf.app/
 Description: A plugin that converts WordPress pages or posts to PDF using html2pdf.app API.
-Version: 1.0
+Version: 1.0.1
 Author: html2pdf.app
 */
+
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 // Add the plugin settings page to the WordPress admin menu
 add_action( 'admin_menu', 'html2pdf_add_menu' );
@@ -136,20 +138,24 @@ function html2pdf_sanitize_checkbox( $value ) {
 add_shortcode( 'html2pdf', 'html2pdf_shortcode' );
 function html2pdf_shortcode( $atts ) {
     $post_id = get_the_ID();
+    $filename = get_post_field( 'post_name', $post_id );
     $html2pdf_url = get_permalink();
     $button_text = ! empty( $atts['text'] ) ? $atts['text'] : 'Generate PDF';
-    $button_html = '<a class="html2pdf_button" href="' . site_url( '/?html2pdf=' . urlencode($html2pdf_url) . '&id=' . $post_id) . '" target="_blank">' . $button_text . '</a>';
-    return $button_html;
+    return '<a class="html2pdf_button" href="' . site_url( '/?html2pdf=' . urlencode( $html2pdf_url ) . '&filename=' . esc_html( $filename ) ) . '" target="_blank">' . esc_html( $button_text ) . '</a>';
 }
 
 // Handle the "Generate PDF" button click
 add_action( 'init', 'html2pdf_generate' );
 function html2pdf_generate() {
-    if ( isset( $_GET['html2pdf'], $_GET['id'] ) ) {
-        $post_slug = get_post_field( 'post_name', (int) $_GET['id'] );
-        $filename = $post_slug ? $post_slug : 'page';
-    
-        $url = $_GET['html2pdf'];
+    if ( isset( $_GET['html2pdf'] ) ) {
+        $url = sanitize_url( $_GET['html2pdf'] );
+        if ( !filter_var( $url, FILTER_VALIDATE_URL ) ) {
+            echo 'Invalid URL provided';
+            exit;
+        }
+
+        $filename = isset($_GET['filename']) ? sanitize_file_name($_GET['filename']) : 'page';
+
         $api_key = get_option( 'html2pdf_api_key' );
         $format = get_option( 'html2pdf_format', 'A4' );
         $landscape = get_option( 'html2pdf_landscape', false );
@@ -165,28 +171,30 @@ function html2pdf_generate() {
             'body' => array(
                 'apiKey' => $api_key,
                 'url' => $url,
-                'filename' => $filename . '.pdf',
                 'format' => $format,
                 'landscape' => $landscape,
                 'marginTop' => $margin_top,
                 'marginRight' => $margin_right,
                 'marginBottom' => $margin_bottom,
                 'marginLeft' => $margin_left,
-                'width' => $width ? $width : null,
-                'height' => $height ? $height : null,
+                'width' => $width ?: null,
+                'height' => $height ?: null,
             )
         );
-        $response = wp_remote_post( 'https://api.html2pdf.app/v1/generate', $args );
 
-        if ( !is_wp_error( $response ) && $response['response']['code'] == 200 ) {
-            header( 'Content-Type: ' . $response['headers']['content-type'] );
-            header( 'Content-Disposition: ' . $response['headers']['content-disposition'] );
-            echo $response['body'];
-            exit;
+        $response = wp_remote_post( 'https://api.html2pdf.app/v1/generate', $args );
+        $output = wp_remote_retrieve_body( $response );
+
+        if ( !is_wp_error( $response ) && wp_remote_retrieve_response_code($response) == 200 ) {
+            header( 'Content-Type: application/pdf' );
+            header( 'Content-Disposition: filename=' . rawurlencode($filename) . '.pdf' );
+            header('Cache-Control: no-cache');
+            echo $output;
         } else {
-            // Display an error message
-            echo isset($response['body']) ? $response['body'] : '<p>Error: Unable to generate PDF file.</p>';
-            exit;
+            $output = !empty( $output ) ?: 'Error: Unable to generate PDF file.';
+            echo esc_html($output);
         }
+
+        exit;
     }
 }
