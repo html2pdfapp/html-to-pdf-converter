@@ -37,7 +37,7 @@ function html2pdf_settings_page() {
                         <?php $formats = ['Letter', 'Legal', 'Tabloid', 'Ledger', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5', 'A6']; ?>
                         <select name="html2pdf_format">
                             <?php foreach($formats as $format) : ?>
-                                <option<?php echo esc_attr( get_option( 'html2pdf_format' ) ) === $format ? ' selected' : ''; ?> value="<?php echo $format; ?>"><?php echo $format; ?></option>
+                                <option<?php echo esc_attr( get_option( 'html2pdf_format' ) === $format ? ' selected' : ''); ?> value="<?php echo esc_attr($format); ?>"><?php echo esc_html($format); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </td>
@@ -69,11 +69,11 @@ function html2pdf_settings_page() {
                 </tr>
                 <tr valign="top">
                     <th scope="row">Width:</th>
-                    <td><input type="number" min="0" name="html2pdf_width" value="<?php $width = esc_attr( get_option( 'html2pdf_width' ) ); echo $width ? $width : ''; ?>" />px</td>
+                    <td><input type="number" min="0" name="html2pdf_width" value="<?php echo esc_attr( get_option( 'html2pdf_width' ) ); ?>" />px</td>
                 </tr>
                 <tr valign="top">
                     <th scope="row">Height:</th>
-                    <td><input type="number" min="0" name="html2pdf_height" value="<?php $height = esc_attr( get_option( 'html2pdf_height' ) ); echo $height ? $height : ''; ?>" />px</td>
+                    <td><input type="number" min="0" name="html2pdf_height" value="<?php echo esc_attr( get_option( 'html2pdf_height' ) ); ?>" />px</td>
                 </tr>
             </table>
             <?php submit_button(); ?>
